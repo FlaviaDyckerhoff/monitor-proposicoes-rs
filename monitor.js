@@ -157,8 +157,7 @@ async function buscarProposicoes() {
     }
   }
 
-  console.error('❌ Todas as tentativas falharam. API da ALRS instável.');
-  return [];
+  throw new Error('Todas as tentativas falharam. API da ALRS instavel.');
 }
 
 function gerarId(p) {
@@ -198,9 +197,7 @@ function normalizarProposicao(p) {
   const proposicoesRaw = await buscarProposicoes();
 
   if (proposicoesRaw.length === 0) {
-    console.log('⚠️ Nenhuma proposição encontrada. API pode estar fora do ar.');
-    // Não atualiza estado — tenta de novo na próxima execução
-    process.exit(0);
+    throw new Error('Nenhuma proposicao encontrada. API pode estar fora do ar.');
   }
 
   const proposicoes = proposicoesRaw.map(normalizarProposicao).filter(p => p.id);
