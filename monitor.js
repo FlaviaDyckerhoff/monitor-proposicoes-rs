@@ -7,9 +7,9 @@ const EMAIL_SENHA = process.env.EMAIL_SENHA;
 const ARQUIVO_ESTADO = 'estado.json';
 const API_URL = 'https://ww4.al.rs.gov.br:5000/listaProposicaoCompleto';
 
-// A API da ALRS fica instável às vezes. Tentamos até 3x antes de desistir.
-const MAX_TENTATIVAS = 3;
-const ESPERA_ENTRE_TENTATIVAS_MS = 15000;
+// A API da ALRS fica instável às vezes. Tentamos com folga para evitar falso negativo.
+const MAX_TENTATIVAS = 5;
+const ESPERA_ENTRE_TENTATIVAS_MS = 20000;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -120,11 +120,13 @@ async function buscarProposicoes() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json, text/plain, */*',
+          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Referer': 'https://ww4.al.rs.gov.br/',
           'Origin': 'https://ww4.al.rs.gov.br'
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(30000) // timeout de 30s
+        signal: AbortSignal.timeout(60000) // timeout de 60s
       });
 
       if (!response.ok) {
@@ -162,8 +164,8 @@ async function buscarProposicoes() {
 
 function gerarId(p) {
   // Tenta campo de ID direto, depois monta a partir de tipo+numero+ano
-  return p.id || p.codigo || p.idProposicao ||
-    `${p.siglaTipoProposicao || p.sigla || p.tipo || ''}-${p.nroProposicao || p.numero || ''}-${p.anoProposicao || p.ano || ''}`.replace(/\s/g, '');
+  return p.id || p.codigo || p.idProposicao || p.proposicaoId ||
+    `${p.siglaTipoProposicao || p.sigla || p.tipo || ''}-${p.nroProposicao || p.numero || ''}-${p.anoProposicao || p.ano || ''}-${p.nomeProponente || ''}`.replace(/\s/g, '');
 }
 
 function normalizarProposicao(p) {
@@ -173,8 +175,8 @@ function normalizarProposicao(p) {
   const numero = p.nroProposicao || p.numero || p.nro || '-';
   const ano = p.anoProposicao || p.ano || '-';
   const autor = p.nomeProponente || p.autor || p.nomeAutor || p.autores || '-';
-  const data = p.dataApresentacao || p.dataEntrada || p.data || '-';
-  const ementa = (p.ementa || p.descricao || '-').substring(0, 200);
+  const data = p.dataApresentacao || p.dthProtocolo || p.dataEntrada || p.data || '-';
+  const ementa = (p.ementa || p.descricao || p.descricaoProposicao || '-').substring(0, 200);
 
   return {
     id: gerarId(p),
