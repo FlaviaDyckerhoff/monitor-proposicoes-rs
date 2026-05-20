@@ -11,6 +11,7 @@ const API_URL = 'https://ww4.al.rs.gov.br:5000/listaProposicaoCompleto';
 const MAX_TENTATIVAS = 5;
 const ESPERA_ENTRE_TENTATIVAS_MS = 20000;
 const DETAIL_BASE_URL = 'https://ww4.al.rs.gov.br/proposicao';
+const STATUS_SEM_EMENTA = new Set(['autuado(a)', 'entrada', 'aprovado(a)']);
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -198,7 +199,67 @@ function gerarId(p) {
     `${p.siglaTipoProposicao || p.sigla || p.tipo || ''}-${p.nroProposicao || p.numero || ''}-${p.anoProposicao || p.ano || ''}-${p.nomeProponente || ''}`.replace(/\s/g, '');
 }
 
-function normalizarProposicao(p) {
+function montarLinkProposicao(tipo, numero, ano) {
+  if (!tipo || !numero || !ano || tipo === '-' || numero === '-' || ano === '-') {
+    return 'https://ww4.al.rs.gov.br/legislativo';
+  }
+  return `https://ww4.al.rs.gov.br/proposicao/${encodeURIComponent(tipo)}/${encodeURIComponent(numero)}/${encodeURIComponent(ano)}`;
+}
+
+function limparTextoHtml(html) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&aacute;/g, 'á')
+    .replace(/&agrave;/g, 'à')
+    .replace(/&acirc;/g, 'â')
+    .replace(/&atilde;/g, 'ã')
+    .replace(/&eacute;/g, 'é')
+    .replace(/&ecirc;/g, 'ê')
+    .replace(/&iacute;/g, 'í')
+    .replace(/&oacute;/g, 'ó')
+    .replace(/&ocirc;/g, 'ô')
+    .replace(/&otilde;/g, 'õ')
+    .replace(/&uacute;/g, 'ú')
+    .replace(/&ccedil;/g, 'ç')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extrairEmentaDaPagina(html) {
+  const match = html.match(/<div[^>]+id=["']content-ementa["'][^>]*>([\s\S]*?)<\/div>/i);
+  if (!match) return '';
+  return limparTextoHtml(match[1]).replace(/^Ementa\s*/i, '').trim();
+}
+
+async function buscarEmentaDetalhe(tipo, numero, ano) {
+  const link = montarLinkProposicao(tipo, numero, ano);
+
+  try {
+    const response = await fetch(link, {
+      headers: {
+        'Accept': 'text/html,application/xhtml+xml',
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      },
+      signal: AbortSignal.timeout(20000)
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const html = await response.text();
+    return extrairEmentaDaPagina(html);
+  } catch (err) {
+    console.warn(`⚠️ Não foi possível buscar ementa em ${link}: ${err.message}`);
+    return '';
+  }
+}
+
+async function normalizarProposicao(p) {
   // Campos observados no payload da ALRS: siglaTipoProposicao, nroProposicao,
   // anoProposicao, nomeProponente, dataApresentacao.
   // O campo descricao é situação/tramitação ("Autuado(a)", "Entrada" etc.),
@@ -209,7 +270,8 @@ function normalizarProposicao(p) {
   const autor = p.nomeProponente || p.autor || p.nomeAutor || p.autores || '-';
   const data = p.dataApresentacao || p.dthProtocolo || p.dataEntrada || p.data || '-';
   const url = montarUrlProposicao({ tipo, numero, ano });
-  const ementa = (p.ementa || p.descricaoProposicao || '-').substring(0, 500);
+  const ementaApi = (p.ementa || p.descricaoProposicao || p.descricao || '').trim();
+  const ementa = STATUS_SEM_EMENTA.has(ementaApi.toLowerCase()) ? '-' : (ementaApi || '-').substring(0, 500);
 
   return {
     id: gerarId(p),
@@ -272,7 +334,7 @@ async function enriquecerEmentasDetalhe(proposicoes) {
     throw new Error('Nenhuma proposicao encontrada. API pode estar fora do ar.');
   }
 
-  const proposicoes = proposicoesRaw.map(normalizarProposicao).filter(p => p.id);
+  const proposicoes = (await Promise.all(proposicoesRaw.map(normalizarProposicao))).filter(p => p.id);
   console.log(`📊 Total normalizado: ${proposicoes.length}`);
 
   const novas = proposicoes.filter(p => !idsVistos.has(p.id));
