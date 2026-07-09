@@ -10,7 +10,7 @@ const API_URL = 'https://ww4.al.rs.gov.br:5000/listaProposicaoCompleto';
 // A API da ALRS fica instável às vezes. Tentamos com folga para evitar falso negativo.
 const MAX_TENTATIVAS = 5;
 const ESPERA_ENTRE_TENTATIVAS_MS = 20000;
-const DETAIL_BASE_URL = 'https://ww4.al.rs.gov.br/proposicao';
+const DETAIL_BASE_URL = 'https://www.al.rs.gov.br/proposicao';
 const STATUS_SEM_EMENTA = new Set(['autuado(a)', 'entrada', 'aprovado(a)']);
 
 function sleep(ms) {
@@ -53,7 +53,7 @@ function montarUrlProposicao(p) {
   const tipo = encodeURIComponent(p.tipo || p.siglaTipoProposicao || p.sigla || '');
   const numero = encodeURIComponent(p.numero || p.nroProposicao || p.nro || '');
   const ano = encodeURIComponent(p.ano || p.anoProposicao || '');
-  if (!tipo || !numero || !ano) return 'https://ww4.al.rs.gov.br/proposicao';
+  if (!tipo || !numero || !ano) return DETAIL_BASE_URL;
   return DETAIL_BASE_URL + '/' + tipo + '/' + numero + '/' + ano;
 }
 
@@ -326,9 +326,9 @@ function gerarId(p) {
 
 function montarLinkProposicao(tipo, numero, ano) {
   if (!tipo || !numero || !ano || tipo === '-' || numero === '-' || ano === '-') {
-    return 'https://ww4.al.rs.gov.br/legislativo';
+    return 'https://www.al.rs.gov.br/legislativo';
   }
-  return `https://ww4.al.rs.gov.br/proposicao/${encodeURIComponent(tipo)}/${encodeURIComponent(numero)}/${encodeURIComponent(ano)}`;
+  return `${DETAIL_BASE_URL}/${encodeURIComponent(tipo)}/${encodeURIComponent(numero)}/${encodeURIComponent(ano)}`;
 }
 
 function limparTextoHtml(html) {
@@ -418,14 +418,14 @@ function extrairEmentaDetalhe(html) {
 }
 
 async function enriquecerEmentaDetalhe(p) {
-  if (!p.url || p.url === 'https://ww4.al.rs.gov.br/proposicao') return p;
+  if (!p.url || p.url === DETAIL_BASE_URL) return p;
 
   try {
     const response = await fetch(p.url, {
       headers: {
         'Accept': 'text/html,application/xhtml+xml,*/*',
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://ww4.al.rs.gov.br/proposicao',
+        'Referer': DETAIL_BASE_URL,
       },
       signal: AbortSignal.timeout(30000),
     });

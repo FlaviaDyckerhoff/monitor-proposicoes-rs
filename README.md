@@ -9,7 +9,7 @@ Monitora automaticamente a API da Assembleia Legislativa do Rio Grande do Sul e 
 1. O GitHub Actions roda o script nos horários configurados
 2. O script chama a API interna da ALRS (`ww4.al.rs.gov.br:5000/listaProposicaoCompleto`)
 3. Compara as proposições recebidas com as já registradas no `estado.json`
-4. Se há proposições novas → envia email com a lista organizada por tipo
+4. Se há proposições novas → envia email com a lista organizada por tipo, usando link público estável no padrão `https://www.al.rs.gov.br/proposicao/{TIPO}/{NUMERO}/{ANO}`
 5. Salva o estado atualizado no repositório
 
 > **Nota sobre estabilidade:** A API da ALRS roda na porta 5000 e tem instabilidade ocasional.
@@ -119,6 +119,12 @@ Body:   JSON com filtros (ano, tipo, proponente, etc.)
 ```
 
 Esta é a API interna usada pelo próprio site da ALRS. Não está documentada publicamente, mas é pública e sem autenticação.
+
+Os links de detalhe exibidos no email e reaproveitados por fluxos operacionais não devem usar o host interno `ww4` nem a página antiga `ExibeProposicao`. O padrão público/canônico é:
+
+```
+https://www.al.rs.gov.br/proposicao/{TIPO}/{NUMERO}/{ANO}
+```
 
 ---
 
