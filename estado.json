@@ -909,9 +909,14 @@
     "9dc124ab-7c73-11f1-9c3b-12b2f7548530",
     "40cf69eb-7c87-11f1-9c3b-12b2f7548530",
     "83b3734e-7c66-11f1-9c3b-12b2f7548530",
-    "83046e0d-7c8b-11f1-9c3b-12b2f7548530"
+    "83046e0d-7c8b-11f1-9c3b-12b2f7548530",
+    "3dfedb1b-7eec-11f1-9c3b-12b2f7548530",
+    "d9d3812c-7eea-11f1-9c3b-12b2f7548530",
+    "a302a305-7ee7-11f1-9c3b-12b2f7548530",
+    "54d5b975-7ee1-11f1-9c3b-12b2f7548530",
+    "4e959b0b-7edf-11f1-9c3b-12b2f7548530"
   ],
-  "ultima_execucao": "2026-07-13T08:41:47.008Z",
+  "ultima_execucao": "2026-07-14T08:41:44.778Z",
   "seed": {
     "fonte": "ALRS listaProposicaoCompleto",
     "ano": "2026",
