@@ -1,5 +1,34 @@
+const FICHA_URL = process.env.FICHA_URL || 'https://doe.monitorlegislativo.com.br/ficha';
+
+function fichaEmailButtonHtml() {
+  return '<div style="background:#eef6ff;border:1px solid #c7ddf2;border-radius:6px;padding:11px 13px;margin:12px 0;color:#173d63;font-size:13px;line-height:1.45">' +
+    '<strong>Ficha</strong><br>' +
+    '<span>Cole o link oficial de uma proposição para criar ficha e acelerar a revisão/cadastro.</span><br>' +
+    '<a href="' + FICHA_URL + '" style="display:inline-block;background:#0f3d5c;color:white;text-decoration:none;border-radius:4px;padding:8px 11px;font-weight:bold;margin-top:8px">Criar ficha</a>' +
+    '</div>';
+}
+
 const fs = require('fs');
 const nodemailer = require('nodemailer');
+let promoverInteresseClienteProposicao = (_item, atuais) => Array.isArray(atuais) ? atuais : [];
+try {
+  try {
+    ({ promoverInteresseClienteProposicao } = require('./client_interest_matcher_js'));
+  } catch (_localErr) {
+    ({ promoverInteresseClienteProposicao } = require('../../agents/pautas/client_interest_matcher_js'));
+  }
+} catch (err) {
+  console.warn('⚠️ Matcher cliente/palavra comum indisponível; usando destaque legado: ' + err.message);
+}
+
+function mlClientInterestContext() {
+  return {
+    uf: typeof CLIENT_INTEREST_UF !== 'undefined' ? CLIENT_INTEREST_UF : (process.env.CLIENT_INTEREST_UF || process.env.UF || ''),
+    municipio: typeof CLIENT_INTEREST_MUNICIPIO !== 'undefined' ? CLIENT_INTEREST_MUNICIPIO : (process.env.CLIENT_INTEREST_MUNICIPIO || process.env.MUNICIPIO || ''),
+    casa: typeof CASA_RADAR03 !== 'undefined' ? CASA_RADAR03 : (process.env.CASA_RADAR03 || process.env.CASA || ''),
+  };
+}
+
 
 const EMAIL_DESTINO = process.env.EMAIL_DESTINO;
 const EMAIL_REMETENTE = process.env.EMAIL_REMETENTE;
@@ -20,7 +49,6 @@ const MAX_TENTATIVAS = 5;
 const ESPERA_ENTRE_TENTATIVAS_MS = 20000;
 const DETAIL_BASE_URL = 'https://www.al.rs.gov.br/proposicao';
 const STATUS_SEM_EMENTA = new Set(['autuado(a)', 'entrada', 'aprovado(a)']);
-
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -121,7 +149,7 @@ const CLIENTES_NOMES_PROPRIOS = [
   'Wild Fork', 'Ajinomoto', 'Vibra', 'Vibra Energia',
   'BR Distribuidora', 'Raízen', 'Raizen', 'Mindlab',
   'ABVTEX', 'Semove', 'Barcas', 'Seta',
-  'Nova Infra', 'BRT'
+  'Nova Infra'
 ];
 
 const CLIENTES_INATIVOS_NAO_DESTACAR = [
@@ -147,7 +175,7 @@ function clientesCitadosNaProposicao(p) {
     const re = new RegExp('(^|[^A-Za-zÀ-ÿ0-9])' + escaped + '([^A-Za-zÀ-ÿ0-9]|$)', 'i');
     if (re.test(texto) && !achados.some(a => a.toLowerCase() === nome.toLowerCase())) achados.push(nome);
   }
-  return achados;
+  return promoverInteresseClienteProposicao(p, achados, mlClientInterestContext());
 }
 
 function anotarClientesCitados(proposicoes) {
@@ -530,7 +558,7 @@ async function enviarEmail(novas) {
     from: `"Monitor Rio Grande do Sul" <${EMAIL_REMETENTE}>`,
     to: EMAIL_DESTINO,
     subject: assuntoEmailClienteCitado(novas, `🏛️ Rio Grande do Sul: ${novas.length} nova(s) proposição(ões) — ${new Date().toLocaleDateString('pt-BR')}`),
-    html,
+    html: fichaEmailButtonHtml() + html,
   });
 
   console.log(`✅ Email enviado com ${novas.length} proposições novas.`);
@@ -623,6 +651,21 @@ function montarLinkProposicao(tipo, numero, ano) {
   return `${DETAIL_BASE_URL}/${encodeURIComponent(tipo)}/${encodeURIComponent(numero)}/${encodeURIComponent(ano)}`;
 }
 
+function corrigirNumeracaoPublicaConhecida(p) {
+  const tipo = String(p?.tipo || '').toUpperCase().trim();
+  const ano = String(p?.ano || '').trim();
+  const numero = String(p?.numero || '').trim();
+  const texto = String(p?.ementa || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const temaBets = /\bbets?\b|apostas?\s+de\s+quota\s+fixa|quota\s+fixa/.test(texto);
+
+  if (tipo === 'PL' && ano === '2026' && numero === '360' && temaBets) {
+    p.numero = '351';
+    p.url = montarLinkProposicao(p.tipo, p.numero, p.ano);
+    p.correcaoNumero03 = 'ALRS: PL 360/2026 normalizado para PL 351/2026 pela fonte oficial';
+  }
+  return p;
+}
+
 function limparTextoHtml(html) {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
@@ -690,7 +733,7 @@ async function normalizarProposicao(p) {
   const ementaApi = (p.ementa || p.descricaoProposicao || p.descricao || '').trim();
   const ementa = STATUS_SEM_EMENTA.has(ementaApi.toLowerCase()) ? '-' : (ementaApi || '-');
 
-  return {
+  return corrigirNumeracaoPublicaConhecida({
     id: gerarId(p),
     tipo,
     numero,
@@ -700,7 +743,7 @@ async function normalizarProposicao(p) {
     ementa,
     situacao: p.descricao || p.situacao || p.situacaoProposicao || '-',
     url,
-  };
+  });
 }
 
 function extrairEmentaDetalhe(html) {
@@ -728,7 +771,7 @@ async function enriquecerEmentaDetalhe(p) {
     console.warn(`⚠️ Não consegui enriquecer ementa de ${p.tipo} ${p.numero}/${p.ano}: ${err.message}`);
   }
 
-  return p;
+  return corrigirNumeracaoPublicaConhecida(p);
 }
 
 async function enriquecerEmentasDetalhe(proposicoes) {
@@ -756,6 +799,18 @@ async function enriquecerEmentasDetalhe(proposicoes) {
 
   const novas = proposicoes.filter(p => !idsVistos.has(p.id));
   console.log(`🆕 Proposições novas: ${novas.length}`);
+
+  if (CONTROLE03_FORCE_LATEST) {
+    const loteRadar03 = novas.length ? novas : proposicoes.slice(0, 120);
+    await enriquecerEmentasDetalhe(loteRadar03);
+    await sincronizarRadar03(loteRadar03);
+    novas.forEach(p => idsVistos.add(p.id));
+    estado.proposicoes_vistas = Array.from(idsVistos);
+    estado.ultima_execucao = new Date().toISOString();
+    salvarEstado(estado);
+    console.log('✅ Radar 03 atualizado fora de hora com a lista atual da fonte. Email não enviado.');
+    return;
+  }
 
   if (novas.length > 0) {
     await enriquecerEmentasDetalhe(novas);
