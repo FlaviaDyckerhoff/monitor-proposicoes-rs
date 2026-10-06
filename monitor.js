@@ -157,7 +157,13 @@ const CLIENTES_INATIVOS_NAO_DESTACAR = [
   'Maersk', 'Matrix', 'Rei do Pitaco', 'Sanofi', 'Syngenta',
   'Ypê', 'Ype', 'Braskem', 'Vital', 'Natural Energia',
   'Pacto Pela Fome', 'TikTok', 'Norte Energia', 'Mac Jee',
-  'Solar', 'Grupo Simões', 'Grupo Simoes'
+  'Solar', 'Grupo Simões', 'Grupo Simoes',
+  // Cadastros inativados no Monitor em 29/09/2026; não geram 🆘.
+  'AEGEA', 'Aegea Saneamento', 'Águas do Rio', 'Aguas do Rio',
+  'Águas do Rio 1', 'Águas do Rio 4', 'Águas de Teresina',
+  'Aguas de Teresina', 'Águas de Timon', 'Aguas de Timon',
+  'COMGAS', 'COMGÁS', 'Regenera', 'Naturgy', 'Barcas',
+  'SABESP', 'Eletromidia', 'Eletromídia', 'Nova Infra'
 ];
 
 function clienteAtivoParaDestaque(nome) {
@@ -223,12 +229,19 @@ function renderizarEmentaCliente(p, renderBase) {
   const clientes = partes.length > 1
     ? partes.slice(1).join(' | Cliente citado: ')
     : ((p && p.clientesCitados) || []).join(', ');
+  const interesses = ((p && p.clientInterestMatches) || [])
+    .filter(match => match.match_type === 'theme')
+    .map(match => match.cliente + ' (' + match.termos.join(', ') + ')');
+  const interesseHtml = interesses.length
+    ? '<div style="margin-top:6px;color:#1e40af;font-size:11px"><strong>🔎 Interesse potencial — conferir:</strong> ' +
+      mlEscapeHtmlClienteDestaque(interesses.join('; ')) + '</div>'
+    : '';
 
-  if (!clientes) return ementa;
+  if (!clientes) return ementa + interesseHtml;
   return ementa + '<div style="margin-top:6px">' +
     '<span style="display:inline-block;background:#fff1f2;border:1px solid #fb7185;color:#991b1b;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0">' +
     '🆘 CLIENTE CITADO: ' + mlDestacarTermosClienteEmail(clientes, p && p.clientesCitados) +
-    '</span></div>';
+    '</span></div>' + interesseHtml;
 }
 
 
