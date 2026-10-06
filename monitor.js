@@ -167,7 +167,16 @@ const CLIENTES_INATIVOS_NAO_DESTACAR = [
 ];
 
 function clienteAtivoParaDestaque(nome) {
-  return !CLIENTES_INATIVOS_NAO_DESTACAR.some(inativo => inativo.toLowerCase() === String(nome || '').toLowerCase());
+  // Base viva do Monitor em 06/10/2026: somente nomes próprios de clientes
+  // operacionais. Bebidas/Energia/Fiação são categorias, não nomes literais.
+  const ativos = new Set([
+    'firjan', 'red bull', 'redbull', 'sindicerv',
+    'boticario', 'boticário', 'grupo boticario', 'grupo boticário',
+    'o boticario', 'o boticário', 'jbs', 'friboi', 'mindlab',
+    '4um', 'abrasel pb', 'abrasel paraíba',
+    'consórcio maracanã', 'octavio dyckerhoff'
+  ]);
+  return ativos.has(String(nome || '').toLowerCase());
 }
 
 function clientesCitadosNaProposicao(p) {

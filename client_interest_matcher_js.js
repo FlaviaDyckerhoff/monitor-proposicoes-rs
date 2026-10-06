@@ -55,12 +55,11 @@ function territoryStatus(rule, item, context) {
 }
 
 function defaultPhase0ClientRules() {
-  const jaguareRule = {
-    id: 'jaguare-incidente',
-    base_terms: ['Jaguaré'],
-    context_terms: ['explosão', 'explosao', 'vazamento', 'gás', 'gas', 'reparação', 'indenização', 'Defensoria', 'apuração', 'responsabilidade'],
-    confidence: 'alta',
-    reason: 'Jaguaré só acende com contexto material do acidente/risco operacional',
+  const maracanaContext = {
+    id: 'maracana-operacao',
+    base_terms: ['Maracanã', 'Maracanãzinho'],
+    context_terms: ['estádio', 'arena', 'bilheteria', 'ingresso', 'evento esportivo', 'camarote', 'catraca'],
+    reason: 'Complexo Maracanã com tema de operação de estádio/evento',
   };
   return [
     { id: 'firjan', official_name: 'FIRJAN', aliases: [], territory_type: 'PRACA_RESTRITA', ufs: ['RJ'], cities: ['Rio de Janeiro'], houses: ['ALERJ', 'CMRJ'], weak_keywords: ['indústria', 'industria'], monitor_priority: true },
@@ -68,7 +67,11 @@ function defaultPhase0ClientRules() {
     { id: 'red-bull', official_name: 'Red Bull', aliases: ['RedBull'], territory_type: 'BR_TODO', weak_keywords: ['bebida energética', 'bebidas energéticas', 'energético', 'energéticos'], monitor_priority: true },
     { id: 'sindicerv', official_name: 'Sindicerv', aliases: [], territory_type: 'BR_TODO', weak_keywords: ['cerveja', 'cervejas', 'cervejaria', 'cervejarias', 'microcervejaria', 'microcervejarias', 'chope', 'chopp', 'brewpub'], monitor_priority: true },
     { id: 'abrasel-pb', official_name: 'Abrasel PB', aliases: ['Abrasel Paraíba'], territory_type: 'PRACA_RESTRITA', ufs: ['PB'], cities: ['João Pessoa'], houses: ['ALPB', 'CMJP'], weak_keywords: ['bares e restaurantes', 'alimentação fora do lar', 'restaurante', 'restaurantes', 'lanchonete', 'lanchonetes'], monitor_priority: true },
-    { id: 'neoenergia', official_name: 'Neoenergia', aliases: ['Cosern'], territory_type: 'PRACA_RESTRITA', ufs: ['RN'], cities: ['Natal'] },
+    { id: 'jbs', official_name: 'JBS', aliases: ['Friboi'], territory_type: 'BR_TODO', weak_keywords: ['abate humanitário', 'bem-estar animal', 'inspeção federal', 'frigorífico', 'frigoríficos', 'proteína animal'] },
+    { id: 'mindlab', official_name: 'MindLab', aliases: ['Mind Lab'], territory_type: 'BR_TODO', weak_keywords: ['PPP educacional', 'PPP de inclusão produtiva', 'educação socioemocional', 'competências socioemocionais'] },
+    { id: '4um', official_name: '4UM/Opportunity', aliases: ['4UM'], territory_type: 'BR_TODO' },
+    { id: 'maracana', official_name: 'Consórcio Maracanã', aliases: [], territory_type: 'PRACA_RESTRITA', ufs: ['RJ'], cities: ['Rio de Janeiro'], special_rules: [maracanaContext] },
+    { id: 'octavio', official_name: 'Octavio Dyckerhoff', aliases: [], territory_type: 'BR_TODO' },
   ];
 }
 
