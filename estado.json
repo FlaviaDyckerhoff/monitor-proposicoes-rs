@@ -1046,9 +1046,10 @@
     "aa7d182a-bcea-11f1-a87c-266230bffdd3",
     "6bf5a0de-be70-11f1-9636-aaa6cb725d9e",
     "e1496d44-c0e7-11f1-9636-aaa6cb725d9e",
-    "99bda58c-c1b5-11f1-9636-aaa6cb725d9e"
+    "99bda58c-c1b5-11f1-9636-aaa6cb725d9e",
+    "ff675dda-c25c-11f1-9636-aaa6cb725d9e"
   ],
-  "ultima_execucao": "2026-10-07T08:40:59.941Z",
+  "ultima_execucao": "2026-10-08T08:40:55.569Z",
   "seed": {
     "fonte": "ALRS listaProposicaoCompleto",
     "ano": "2026",
